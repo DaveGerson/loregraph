@@ -1,0 +1,1751 @@
+<!doctype html>
+<html lang="en" data-theme="blueprint">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta
+    name="description"
+    content="Interactive architecture, ontology, loader, PRD, TDD, and PRFAQ for LoreGraph: a generic evidence-backed lore, campaign, and personal knowledge system."
+  />
+  <title>LoreGraph System Architecture</title>
+  <style>
+    :root {
+      --bg: #07110f;
+      --bg-deep: #040a09;
+      --panel: rgba(14, 31, 27, 0.91);
+      --panel-strong: #10251f;
+      --panel-soft: rgba(25, 51, 44, 0.55);
+      --ink: #eef4eb;
+      --muted: #9fb3aa;
+      --faint: #6e857b;
+      --line: rgba(172, 211, 191, 0.18);
+      --line-strong: rgba(172, 211, 191, 0.34);
+      --gold: #e1b86c;
+      --gold-soft: rgba(225, 184, 108, 0.12);
+      --teal: #58c9b6;
+      --teal-soft: rgba(88, 201, 182, 0.12);
+      --blue: #80bddd;
+      --green: #8ac281;
+      --rose: #d89191;
+      --shadow: 0 28px 86px rgba(0, 0, 0, 0.3);
+      --radius: 18px;
+      --serif: Georgia, "Times New Roman", serif;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    }
+
+    html[data-theme="parchment"] {
+      --bg: #e8dfca;
+      --bg-deep: #d8ccb1;
+      --panel: rgba(248, 242, 225, 0.92);
+      --panel-strong: #f4ecd8;
+      --panel-soft: rgba(255, 251, 239, 0.65);
+      --ink: #202a26;
+      --muted: #56645e;
+      --faint: #718079;
+      --line: rgba(54, 75, 65, 0.16);
+      --line-strong: rgba(54, 75, 65, 0.3);
+      --gold: #8c5f16;
+      --gold-soft: rgba(140, 95, 22, 0.1);
+      --teal: #147b70;
+      --teal-soft: rgba(20, 123, 112, 0.1);
+      --blue: #276d8d;
+      --green: #467d45;
+      --rose: #9a5252;
+      --shadow: 0 24px 60px rgba(53, 43, 25, 0.15);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--ink);
+      background:
+        linear-gradient(var(--line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--line) 1px, transparent 1px),
+        radial-gradient(circle at 86% -4%, rgba(88, 201, 182, 0.13), transparent 34rem),
+        radial-gradient(circle at -10% 28%, rgba(225, 184, 108, 0.09), transparent 30rem),
+        var(--bg);
+      background-size: 56px 56px, 56px 56px, auto, auto, auto;
+      font-family: var(--sans);
+      line-height: 1.55;
+    }
+
+    button, input { font: inherit; }
+    a { color: inherit; }
+    button:focus-visible, a:focus-visible, input:focus-visible {
+      outline: 3px solid var(--gold);
+      outline-offset: 3px;
+    }
+
+    .skip-link {
+      position: fixed;
+      top: -80px;
+      left: 16px;
+      z-index: 100;
+      padding: 10px 14px;
+      color: #07100e;
+      background: var(--gold);
+      border-radius: 8px;
+      font-weight: 800;
+      text-decoration: none;
+    }
+    .skip-link:focus { top: 16px; }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      min-height: 68px;
+      padding: 10px clamp(16px, 4vw, 64px);
+      border-bottom: 1px solid var(--line);
+      background: color-mix(in srgb, var(--bg-deep) 86%, transparent);
+      backdrop-filter: blur(18px);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .brand-mark {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      flex: 0 0 auto;
+      border: 1px solid var(--gold);
+      border-radius: 50%;
+      color: var(--gold);
+      background: var(--gold-soft);
+      font: 20px var(--serif);
+    }
+    .brand-mark::after {
+      content: "";
+      position: absolute;
+      inset: 5px;
+      border: 1px solid currentColor;
+      border-radius: 50%;
+      opacity: 0.35;
+    }
+    .brand-copy strong { display: block; font: 15px var(--serif); letter-spacing: 0.035em; }
+    .brand-copy span {
+      display: block;
+      color: var(--faint);
+      font: 10px/1.2 var(--mono);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+    .topnav { display: flex; align-items: center; gap: 2px; }
+    .topnav a {
+      padding: 9px 9px;
+      border-radius: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 750;
+      text-decoration: none;
+    }
+    .topnav a:hover { color: var(--ink); background: var(--panel-soft); }
+    .top-actions { display: flex; align-items: center; gap: 8px; }
+    .icon-button, .download-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+      border: 1px solid var(--line-strong);
+      border-radius: 10px;
+      color: var(--ink);
+      background: var(--panel-soft);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 800;
+      text-decoration: none;
+    }
+    .icon-button { width: 38px; padding: 0; }
+    .download-button { padding: 0 13px; gap: 7px; }
+    .icon-button:hover, .download-button:hover { border-color: var(--gold); background: var(--gold-soft); }
+
+    .page { width: min(1440px, 100%); margin: 0 auto; padding: 0 clamp(18px, 4vw, 64px) 80px; }
+    .section { padding-top: 96px; scroll-margin-top: 72px; }
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 14px;
+      color: var(--teal);
+      font: 700 11px/1.2 var(--mono);
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+    .eyebrow::before { content: ""; width: 28px; height: 1px; background: currentColor; }
+    h1, h2, h3, h4, p { margin-top: 0; }
+    h1, h2, h3, h4 { font-family: var(--serif); font-weight: 500; }
+    h1 { margin-bottom: 22px; font-size: clamp(46px, 7vw, 92px); line-height: 0.96; letter-spacing: -0.045em; }
+    h2 { margin-bottom: 14px; font-size: clamp(32px, 4.2vw, 56px); line-height: 1.03; letter-spacing: -0.035em; }
+    h3 { margin-bottom: 10px; font-size: 22px; line-height: 1.15; }
+    h4 { margin-bottom: 7px; font-size: 17px; }
+    .lede { max-width: 790px; color: var(--muted); font-size: clamp(17px, 2vw, 21px); line-height: 1.68; }
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 32px;
+      margin-bottom: 34px;
+    }
+    .section-head > div:first-child { max-width: 850px; }
+    .section-note { max-width: 390px; color: var(--muted); font-size: 13px; }
+
+    .hero {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(340px, 0.8fr);
+      align-items: center;
+      gap: clamp(34px, 7vw, 104px);
+      min-height: calc(100vh - 68px);
+      padding: 80px 0 72px;
+    }
+    .hero::after {
+      content: "LKG / 2.0";
+      position: absolute;
+      right: 0;
+      bottom: 28px;
+      color: var(--faint);
+      font: 10px var(--mono);
+      letter-spacing: 0.18em;
+      writing-mode: vertical-rl;
+    }
+    .hero h1 .accent { color: var(--gold); font-style: italic; }
+    .validation-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 22px;
+      padding: 7px 10px;
+      border: 1px solid var(--line-strong);
+      border-radius: 999px;
+      color: var(--muted);
+      background: var(--panel-soft);
+      font: 9px var(--mono);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .validation-badge i { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 32px; }
+    .primary-button, .secondary-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      min-height: 46px;
+      padding: 0 17px;
+      border-radius: 11px;
+      font-size: 13px;
+      font-weight: 850;
+      text-decoration: none;
+    }
+    .primary-button { color: #0a1512; background: var(--gold); border: 1px solid var(--gold); }
+    .secondary-button { color: var(--ink); background: var(--panel-soft); border: 1px solid var(--line-strong); }
+    .thesis {
+      margin-top: 34px;
+      padding: 17px 19px;
+      border-left: 2px solid var(--teal);
+      color: var(--muted);
+      background: linear-gradient(90deg, var(--teal-soft), transparent);
+      font-size: 13px;
+    }
+    .thesis strong { color: var(--ink); }
+
+    .hero-orbit {
+      position: relative;
+      aspect-ratio: 1;
+      width: min(100%, 530px);
+      margin-inline: auto;
+      border: 1px solid var(--line-strong);
+      border-radius: 50%;
+      background:
+        radial-gradient(circle, var(--gold-soft) 0 19%, transparent 20% 45%, var(--teal-soft) 46% 47%, transparent 48%),
+        var(--panel-soft);
+      box-shadow: var(--shadow);
+    }
+    .hero-orbit::before, .hero-orbit::after {
+      content: "";
+      position: absolute;
+      inset: 11%;
+      border: 1px dashed var(--line-strong);
+      border-radius: 50%;
+    }
+    .hero-orbit::after { inset: 30%; border-style: solid; }
+    .orbit-core {
+      position: absolute;
+      z-index: 2;
+      inset: 37%;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--gold);
+      border-radius: 50%;
+      color: var(--gold);
+      background: var(--panel-strong);
+      text-align: center;
+      font: 700 10px/1.4 var(--mono);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .orbit-node {
+      position: absolute;
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      width: 30%;
+      min-height: 66px;
+      padding: 10px 12px;
+      border: 1px solid var(--line-strong);
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--panel-strong) 95%, transparent);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+    }
+    .orbit-node b { font-size: 12px; }
+    .orbit-node span { color: var(--faint); font: 9px/1.4 var(--mono); text-transform: uppercase; }
+    .orbit-node:nth-of-type(2) { top: 3%; left: 35%; }
+    .orbit-node:nth-of-type(3) { top: 25%; right: -2%; }
+    .orbit-node:nth-of-type(4) { bottom: 12%; right: 2%; }
+    .orbit-node:nth-of-type(5) { bottom: 0; left: 27%; }
+    .orbit-node:nth-of-type(6) { bottom: 23%; left: -3%; }
+    .orbit-node:nth-of-type(7) { top: 15%; left: 0; }
+    .hero-metrics {
+      position: absolute;
+      right: 4%;
+      bottom: 7%;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      width: 92%;
+      border: 1px solid var(--line);
+      background: var(--line);
+      transform: translateY(108%);
+    }
+    .metric { padding: 12px; background: var(--panel); text-align: center; }
+    .metric strong { display: block; color: var(--gold); font: 500 21px var(--serif); }
+    .metric span { color: var(--faint); font: 9px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; }
+
+    .journey-shell {
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+    .journey-tabs { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--bg-deep); }
+    .journey-tab {
+      min-height: 132px;
+      padding: 22px;
+      border: 0;
+      border-right: 1px solid var(--line);
+      color: var(--muted);
+      background: transparent;
+      cursor: pointer;
+      text-align: left;
+    }
+    .journey-tab:last-child { border-right: 0; }
+    .journey-tab small { display: block; margin-bottom: 13px; color: var(--faint); font: 9px var(--mono); text-transform: uppercase; }
+    .journey-tab b { display: block; margin-bottom: 7px; color: var(--ink); font: 500 19px var(--serif); }
+    .journey-tab span { font-size: 11px; }
+    .journey-tab.active { background: var(--gold-soft); box-shadow: inset 0 -2px var(--gold); }
+    .journey-detail { display: grid; grid-template-columns: 0.82fr 1.18fr; gap: 34px; padding: clamp(26px, 4vw, 46px); }
+    .journey-summary p { color: var(--muted); }
+    .journey-chip-row { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 20px; }
+    .chip {
+      padding: 6px 9px;
+      border: 1px solid var(--line-strong);
+      border-radius: 999px;
+      color: var(--muted);
+      background: var(--panel-soft);
+      font: 9px var(--mono);
+    }
+    .chip.gold { color: var(--gold); border-color: var(--gold); }
+    .chip.teal { color: var(--teal); border-color: var(--teal); }
+    .journey-flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .mini-stage {
+      position: relative;
+      min-height: 152px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: var(--panel-soft);
+    }
+    .mini-stage:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      top: 50%;
+      right: -10px;
+      z-index: 2;
+      color: var(--gold);
+      transform: translateY(-50%);
+    }
+    .mini-stage small { color: var(--gold); font: 9px var(--mono); }
+    .mini-stage b { display: block; margin: 15px 0 7px; font: 500 16px var(--serif); }
+    .mini-stage p { margin: 0; color: var(--muted); font-size: 10px; }
+    .guardrail {
+      grid-column: 1 / -1;
+      margin-top: 4px;
+      padding: 13px 15px;
+      border-left: 2px solid var(--teal);
+      color: var(--muted);
+      background: var(--teal-soft);
+      font-size: 11px;
+    }
+    .guardrail strong { color: var(--ink); }
+
+    .architecture-map {
+      display: grid;
+      grid-template-columns: 0.8fr 1.2fr;
+      gap: 18px;
+    }
+    .kernel-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 430px;
+      padding: clamp(26px, 4vw, 44px);
+      border: 1px solid var(--gold);
+      border-radius: var(--radius);
+      background: linear-gradient(145deg, var(--gold-soft), var(--panel));
+      box-shadow: var(--shadow);
+    }
+    .kernel-card .kernel-label { color: var(--gold); font: 9px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; }
+    .kernel-card p { color: var(--muted); }
+    .kernel-path {
+      margin: 22px 0;
+      padding: 18px;
+      border-radius: 12px;
+      color: var(--blue);
+      background: var(--bg-deep);
+      font: 11px/1.8 var(--mono);
+      white-space: pre-wrap;
+    }
+    .extension-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .extension-card {
+      min-height: 202px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--panel);
+    }
+    .extension-card small { color: var(--teal); font: 9px var(--mono); text-transform: uppercase; }
+    .extension-card h3 { margin-top: 23px; font-size: 20px; }
+    .extension-card p { color: var(--muted); font-size: 11px; }
+    .pack-strip {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 16px 19px;
+      border: 1px dashed var(--line-strong);
+      border-radius: 12px;
+      color: var(--muted);
+      background: var(--panel-soft);
+      font-size: 11px;
+    }
+    .pack-strip b { color: var(--ink); }
+
+    .layer-shell {
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      background: var(--panel);
+    }
+    .layer-tabs { display: grid; grid-template-columns: repeat(6, 1fr); border-bottom: 1px solid var(--line); background: var(--bg-deep); }
+    .layer-tab {
+      min-height: 82px;
+      padding: 13px 12px;
+      border: 0;
+      border-right: 1px solid var(--line);
+      color: var(--muted);
+      background: transparent;
+      cursor: pointer;
+      text-align: left;
+    }
+    .layer-tab span { display: block; margin-bottom: 9px; color: var(--faint); font: 9px var(--mono); text-transform: uppercase; }
+    .layer-tab b { font: 500 15px var(--serif); }
+    .layer-tab.active { color: var(--ink); background: var(--gold-soft); box-shadow: inset 0 -2px var(--gold); }
+    .layer-content { padding: clamp(22px, 4vw, 42px); }
+    .layer-intro { display: grid; grid-template-columns: 1fr minmax(280px, 0.65fr); gap: 34px; margin-bottom: 30px; }
+    .layer-intro p { max-width: 720px; color: var(--muted); }
+    .relation-path {
+      align-self: start;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      color: var(--teal);
+      background: var(--bg-deep);
+      font: 10px/1.8 var(--mono);
+      white-space: pre-wrap;
+    }
+    .schema-tools { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+    .schema-count { color: var(--faint); font: 10px var(--mono); text-transform: uppercase; }
+    .schema-search {
+      width: min(310px, 100%);
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      color: var(--ink);
+      background: var(--bg-deep);
+    }
+    .schema-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .schema-card {
+      min-height: 142px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel-soft);
+      transition: 0.16s ease;
+    }
+    .schema-card:hover { transform: translateY(-2px); border-color: var(--teal); }
+    .schema-card .type { display: block; margin-bottom: 16px; color: var(--teal); font: 9px var(--mono); text-transform: uppercase; }
+    .schema-card b { display: block; margin-bottom: 7px; font: 500 17px var(--serif); }
+    .schema-card p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.55; }
+    .empty-state { grid-column: 1 / -1; padding: 30px; border: 1px dashed var(--line-strong); border-radius: 12px; color: var(--muted); text-align: center; }
+
+    .pipeline-shell {
+      display: grid;
+      grid-template-columns: 250px minmax(0, 1fr);
+      min-height: 540px;
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+    .pipeline-nav { padding: 18px; border-right: 1px solid var(--line); background: var(--bg-deep); }
+    .pipeline-nav-label, .scenario-list-label { margin: 4px 8px 14px; color: var(--faint); font: 9px var(--mono); letter-spacing: 0.14em; text-transform: uppercase; }
+    .pipeline-step {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      align-items: center;
+      gap: 9px;
+      width: 100%;
+      margin: 3px 0;
+      padding: 10px;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      color: var(--muted);
+      background: transparent;
+      text-align: left;
+      cursor: pointer;
+    }
+    .pipeline-step .step-index { color: var(--faint); font: 10px var(--mono); }
+    .pipeline-step b { font-size: 12px; }
+    .pipeline-step:hover { color: var(--ink); background: var(--panel-soft); }
+    .pipeline-step.active { color: var(--ink); border-color: var(--teal); background: var(--teal-soft); }
+    .pipeline-step.active .step-index { color: var(--teal); }
+    .pipeline-detail { display: grid; grid-template-rows: auto 1fr auto; padding: clamp(24px, 4vw, 48px); }
+    .stage-badge { display: inline-flex; align-items: center; gap: 8px; color: var(--teal); font: 700 10px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; }
+    .stage-badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 5px var(--teal-soft); }
+    .pipeline-title { margin: 18px 0 14px; font-size: clamp(29px, 4vw, 46px); }
+    .pipeline-description { max-width: 730px; color: var(--muted); font-size: 16px; line-height: 1.75; }
+    .pipeline-grid { display: grid; grid-template-columns: 1fr 1fr; align-items: start; gap: 26px; margin-top: 24px; }
+    .mechanic-card { height: 100%; padding: 20px; border: 1px solid var(--line); border-radius: 13px; background: var(--panel-soft); }
+    .mechanic-card small { display: block; margin-bottom: 12px; color: var(--faint); font: 9px var(--mono); text-transform: uppercase; }
+    .mechanic-card ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: 12px; }
+    .mechanic-card li + li { margin-top: 8px; }
+    .output-code {
+      margin: 0;
+      padding: 18px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      color: var(--blue);
+      background: var(--bg-deep);
+      font: 11px/1.65 var(--mono);
+      white-space: pre-wrap;
+    }
+    .pipeline-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-top: 30px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      color: var(--faint);
+      font-size: 11px;
+    }
+    .cost-chip { display: inline-flex; padding: 5px 8px; border: 1px solid var(--green); border-radius: 999px; color: var(--green); font: 9px var(--mono); text-transform: uppercase; }
+
+    .truth-layout { display: grid; grid-template-columns: 0.78fr 1.22fr; gap: 18px; }
+    .truth-axis-list { display: grid; gap: 8px; }
+    .truth-axis {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 12px;
+      padding: 15px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+    }
+    .axis-mark { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; color: var(--gold); background: var(--gold-soft); font: 700 13px var(--mono); }
+    .truth-axis b { display: block; margin-bottom: 3px; font: 17px var(--serif); }
+    .truth-axis span { color: var(--muted); font-size: 11px; }
+    .assertion-card {
+      padding: clamp(22px, 4vw, 38px);
+      border: 1px solid var(--gold);
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, var(--gold-soft), var(--panel));
+      box-shadow: var(--shadow);
+    }
+    .assertion-code { margin: 22px 0; padding: 20px; border-radius: 13px; color: var(--blue); background: var(--bg-deep); font: 11px/1.8 var(--mono); }
+    .assertion-code .gold { color: var(--gold); }
+    .assertion-code .teal { color: var(--teal); }
+    .chips, .filter-row { display: flex; flex-wrap: wrap; gap: 7px; }
+
+    .simulator {
+      display: grid;
+      grid-template-columns: 300px minmax(0, 1fr);
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+    .scenario-list { padding: 18px; border-right: 1px solid var(--line); background: var(--bg-deep); }
+    .scenario-button {
+      width: 100%;
+      margin: 4px 0;
+      padding: 13px;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      color: var(--muted);
+      background: transparent;
+      cursor: pointer;
+      text-align: left;
+    }
+    .scenario-button small { display: block; margin-bottom: 5px; color: var(--faint); font: 9px var(--mono); text-transform: uppercase; }
+    .scenario-button b { font-size: 12px; line-height: 1.4; }
+    .scenario-button.active { color: var(--ink); border-color: var(--gold); background: var(--gold-soft); }
+    .scenario-main { padding: clamp(24px, 4vw, 44px); }
+    .question-label { color: var(--faint); font: 9px var(--mono); letter-spacing: 0.13em; text-transform: uppercase; }
+    .scenario-question { margin: 10px 0 25px; font-size: clamp(25px, 3.6vw, 40px); }
+    .scenario-flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .flow-step { position: relative; min-height: 138px; padding: 16px; border: 1px solid var(--line); border-radius: 11px; background: var(--panel-soft); }
+    .flow-step:not(:last-child)::after { content: "→"; position: absolute; z-index: 2; top: 50%; right: -10px; color: var(--gold); transform: translateY(-50%); }
+    .flow-step span { color: var(--gold); font: 9px var(--mono); }
+    .flow-step b { display: block; margin: 14px 0 6px; font: 500 16px var(--serif); }
+    .flow-step p { margin: 0; color: var(--muted); font-size: 10px; }
+    .context-pack { margin-top: 20px; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg-deep); }
+    .context-pack-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 13px; }
+    .context-pack-head b { font: 10px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; }
+    .copy-button { padding: 7px 10px; border: 1px solid var(--line-strong); border-radius: 8px; color: var(--ink); background: var(--panel-soft); cursor: pointer; font-size: 10px; }
+    .context-pack p { margin: 0; color: var(--muted); font-size: 11px; }
+    .filter-row { margin-top: 12px; }
+    .filter { padding: 5px 8px; border-radius: 5px; color: var(--teal); background: var(--teal-soft); font: 9px var(--mono); }
+
+    .contract-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .contract-card { overflow: hidden; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--panel); }
+    .contract-card-head { padding: 22px; border-bottom: 1px solid var(--line); background: var(--panel-soft); }
+    .contract-card-head span { color: var(--faint); font: 9px var(--mono); text-transform: uppercase; }
+    .contract-card-head h3 { margin: 7px 0 0; }
+    .contract-row { padding: 15px 22px; border-bottom: 1px solid var(--line); }
+    .contract-row:last-child { border-bottom: 0; }
+    .contract-row b { display: block; margin-bottom: 5px; font-size: 11px; }
+    .contract-row span { color: var(--muted); font-size: 11px; }
+
+    .docs-shell { overflow: hidden; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--panel); box-shadow: var(--shadow); }
+    .docs-tabs { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid var(--line); background: var(--bg-deep); }
+    .docs-tab { min-height: 78px; padding: 15px 18px; border: 0; border-right: 1px solid var(--line); color: var(--muted); background: transparent; cursor: pointer; text-align: left; }
+    .docs-tab small { display: block; margin-bottom: 8px; color: var(--faint); font: 9px var(--mono); text-transform: uppercase; }
+    .docs-tab b { color: var(--ink); font: 500 18px var(--serif); }
+    .docs-tab.active { background: var(--gold-soft); box-shadow: inset 0 -2px var(--gold); }
+    .docs-content { display: grid; grid-template-columns: 0.75fr 1.25fr; gap: 34px; padding: clamp(26px, 4vw, 46px); }
+    .doc-summary p { color: var(--muted); }
+    .doc-download { display: inline-flex; align-items: center; gap: 8px; margin-top: 14px; padding: 10px 13px; border: 1px solid var(--gold); border-radius: 9px; color: var(--gold); background: var(--gold-soft); font-size: 11px; font-weight: 800; text-decoration: none; }
+    .doc-outline { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .doc-block { min-height: 132px; padding: 17px; border: 1px solid var(--line); border-radius: 11px; background: var(--panel-soft); }
+    .doc-block small { color: var(--teal); font: 9px var(--mono); text-transform: uppercase; }
+    .doc-block b { display: block; margin: 12px 0 6px; font: 500 16px var(--serif); }
+    .doc-block p { margin: 0; color: var(--muted); font-size: 10px; }
+
+    .easy-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .easy-card { min-height: 268px; padding: 24px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
+    .easy-card.recommended { border-color: var(--gold); background: linear-gradient(145deg, var(--gold-soft), var(--panel)); }
+    .easy-card small { color: var(--teal); font: 9px var(--mono); text-transform: uppercase; }
+    .easy-card h3 { margin-top: 24px; }
+    .easy-card p { color: var(--muted); font-size: 12px; }
+    .easy-card ul { margin: 18px 0 0; padding-left: 18px; color: var(--muted); font-size: 11px; }
+    .easy-card li + li { margin-top: 7px; }
+
+    .budget-panel {
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: 30px;
+      padding: clamp(26px, 5vw, 52px);
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      background: linear-gradient(140deg, var(--panel), var(--teal-soft));
+    }
+    .budget-panel p { color: var(--muted); }
+    .budget-ladder { display: grid; gap: 9px; }
+    .budget-step { display: grid; grid-template-columns: 110px 1fr auto; align-items: center; gap: 14px; padding: 13px 15px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+    .budget-step strong { font: 10px var(--mono); text-transform: uppercase; }
+    .budget-step span { color: var(--muted); font-size: 11px; }
+    .budget-step em { color: var(--green); font: normal 9px var(--mono); text-transform: uppercase; }
+    .budget-step:last-child em { color: var(--gold); }
+
+    .roadmap { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line-strong); }
+    .phase { position: relative; min-height: 316px; padding: 28px 24px; border-right: 1px solid var(--line); }
+    .phase:last-child { border-right: 0; }
+    .phase::before { content: ""; position: absolute; top: -5px; left: 24px; width: 9px; height: 9px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 5px var(--gold-soft); }
+    .phase .phase-number { color: var(--faint); font: 9px var(--mono); text-transform: uppercase; }
+    .phase h3 { margin-top: 32px; }
+    .phase p { color: var(--muted); font-size: 11px; }
+    .phase ul { margin: 20px 0 0; padding: 0; list-style: none; }
+    .phase li { padding: 7px 0; border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; }
+
+    footer { display: flex; justify-content: space-between; gap: 24px; margin-top: 90px; padding: 28px 0 10px; border-top: 1px solid var(--line); color: var(--faint); font: 9px/1.6 var(--mono); text-transform: uppercase; }
+    .toast { position: fixed; right: 20px; bottom: 20px; z-index: 80; padding: 12px 15px; border: 1px solid var(--teal); border-radius: 10px; color: var(--ink); background: var(--panel-strong); box-shadow: var(--shadow); font-size: 11px; opacity: 0; transform: translateY(12px); pointer-events: none; transition: 0.2s ease; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 1140px) {
+      .topnav { display: none; }
+      .hero { grid-template-columns: 1fr; min-height: auto; padding-top: 90px; }
+      .hero-copy { max-width: 900px; }
+      .hero-orbit { width: min(88vw, 520px); margin-top: 28px; }
+      .journey-detail, .architecture-map, .truth-layout, .budget-panel, .docs-content { grid-template-columns: 1fr; }
+      .schema-grid { grid-template-columns: repeat(3, 1fr); }
+      .contract-grid { grid-template-columns: 1fr 1fr; }
+      .roadmap { grid-template-columns: 1fr 1fr; }
+      .phase:nth-child(2) { border-right: 0; }
+      .phase:nth-child(-n + 2) { border-bottom: 1px solid var(--line); }
+    }
+
+    @media (max-width: 780px) {
+      .topbar { padding-inline: 14px; }
+      .brand-copy span, .download-button span { display: none; }
+      .page { padding-inline: 15px; }
+      .section { padding-top: 72px; }
+      .section-head { align-items: start; flex-direction: column; gap: 10px; }
+      .section-note { max-width: none; }
+      .hero { padding-top: 58px; }
+      .hero-orbit { margin-bottom: 95px; }
+      .orbit-node { width: 36%; min-height: 56px; padding: 8px; }
+      .orbit-node b { font-size: 10px; }
+      .orbit-node span { font-size: 7px; }
+      .orbit-node:nth-of-type(2) { left: 32%; }
+      .orbit-node:nth-of-type(3) { right: -4%; }
+      .orbit-node:nth-of-type(5) { left: 23%; }
+      .orbit-node:nth-of-type(7) { left: -3%; }
+      .journey-tabs, .docs-tabs { display: flex; overflow-x: auto; }
+      .journey-tab { flex: 0 0 250px; }
+      .docs-tab { flex: 0 0 180px; }
+      .journey-flow, .scenario-flow { grid-template-columns: 1fr 1fr; }
+      .mini-stage:nth-child(2)::after, .flow-step:nth-child(2)::after { display: none; }
+      .extension-grid, .doc-outline { grid-template-columns: 1fr; }
+      .pack-strip { align-items: flex-start; flex-direction: column; }
+      .pipeline-shell, .simulator { grid-template-columns: 1fr; }
+      .pipeline-nav, .scenario-list { display: flex; gap: 6px; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+      .pipeline-nav-label, .scenario-list-label { display: none; }
+      .pipeline-step { flex: 0 0 150px; grid-template-columns: 24px 1fr; }
+      .scenario-button { flex: 0 0 210px; }
+      .pipeline-grid, .layer-intro { grid-template-columns: 1fr; }
+      .pipeline-foot { align-items: flex-start; flex-direction: column; }
+      .layer-tabs { display: flex; overflow-x: auto; }
+      .layer-tab { flex: 0 0 150px; }
+      .schema-tools { align-items: stretch; flex-direction: column; }
+      .schema-search { width: 100%; }
+      .schema-grid { grid-template-columns: 1fr 1fr; }
+      .contract-grid, .easy-grid { grid-template-columns: 1fr; }
+      .budget-step { grid-template-columns: 90px 1fr; }
+      .budget-step em { grid-column: 2; }
+      .roadmap { grid-template-columns: 1fr; }
+      .phase { min-height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+      footer { flex-direction: column; }
+    }
+
+    @media (max-width: 500px) {
+      h1 { font-size: 44px; }
+      .hero-actions { align-items: stretch; flex-direction: column; }
+      .hero-actions a { justify-content: center; }
+      .journey-flow, .scenario-flow, .schema-grid { grid-template-columns: 1fr; }
+      .mini-stage:not(:last-child)::after, .flow-step:not(:last-child)::after {
+        top: auto;
+        right: 50%;
+        bottom: -16px;
+        display: block;
+        transform: translateX(50%) rotate(90deg);
+      }
+      .metric { padding: 9px 3px; }
+      .metric strong { font-size: 17px; }
+      .metric span { font-size: 7px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to architecture</a>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">L</div>
+      <div class="brand-copy">
+        <strong>LoreGraph</strong>
+        <span>Architecture &amp; product contract</span>
+      </div>
+    </div>
+    <nav class="topnav" aria-label="Primary navigation">
+      <a href="#journeys">Journeys</a>
+      <a href="#model">Model</a>
+      <a href="#schema">Ontology</a>
+      <a href="#loader">Loader</a>
+      <a href="#retrieval">Retrieval</a>
+      <a href="#documents">PRD · TDD · PRFAQ</a>
+      <a href="#delivery">Delivery</a>
+    </nav>
+    <div class="top-actions">
+      <button class="icon-button" id="themeToggle" type="button" aria-label="Switch to parchment theme" title="Switch theme">◐</button>
+      <a class="download-button" href="/loregraph-system-architecture.html" download>
+        <span>Download HTML</span><b aria-hidden="true">↓</b>
+      </a>
+    </div>
+  </header>
+
+  <main class="page" id="main">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <div class="validation-badge"><i aria-hidden="true"></i> Generic system · initial validation corpus: Eberron</div>
+        <p class="eyebrow">Approved direction · v2.0</p>
+        <h1 id="hero-title">One evidence system for <span class="accent">lore, play,</span> and notes.</h1>
+        <p class="lede">
+          LoreGraph turns books, rules, campaign records, and everyday notes into cited answers and living continuity.
+          A generic evidence ledger powers Neo4j Aura, Obsidian, and the application without making any one setting,
+          rules system, or database the source of truth.
+        </p>
+        <div class="hero-actions">
+          <a class="primary-button" href="#journeys">Explore the journeys <span>→</span></a>
+          <a class="secondary-button" href="#documents">Open the product documents</a>
+        </div>
+        <div class="thesis">
+          <strong>The architectural bet:</strong> assertions and addressable evidence are canonical. Graph edges,
+          wiki notes, vector indexes, dashboards, and answer contexts are rebuildable projections.
+        </div>
+      </div>
+
+      <div class="hero-orbit" aria-label="Canonical evidence ledger surrounded by inputs, processing, and outputs">
+        <div class="orbit-core">Portable<br />evidence<br />ledger</div>
+        <div class="orbit-node"><b>Source library</b><span>PDF · notes · web</span></div>
+        <div class="orbit-node"><b>Entity resolution</b><span>Identity · aliases</span></div>
+        <div class="orbit-node"><b>Neo4j Aura</b><span>Graph projection</span></div>
+        <div class="orbit-node"><b>LoreGraph app</b><span>Journey views</span></div>
+        <div class="orbit-node"><b>Obsidian</b><span>Human workspace</span></div>
+        <div class="orbit-node"><b>Hybrid RAG</b><span>Cited answers</span></div>
+        <div class="hero-metrics" aria-hidden="true">
+          <div class="metric"><strong>3</strong><span>journeys</span></div>
+          <div class="metric"><strong>7</strong><span>profiles</span></div>
+          <div class="metric"><strong>1</strong><span>ledger</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="journeys" aria-labelledby="journeys-title">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Three first-class journeys</p>
+          <h2 id="journeys-title">The model earns its complexity in daily use.</h2>
+        </div>
+        <p class="section-note">
+          Each journey uses the same source, identity, assertion, evidence, visibility, time, and review kernel—then
+          activates only the domain profile it needs.
+        </p>
+      </div>
+      <div class="journey-shell">
+        <div class="journey-tabs" id="journeyTabs" role="tablist" aria-label="Key product journeys"></div>
+        <div class="journey-detail">
+          <div class="journey-summary">
+            <p class="eyebrow" id="journeyEyebrow">Journey 01</p>
+            <h3 id="journeyTitle">General lore support</h3>
+            <p id="journeyDescription"></p>
+            <div class="journey-chip-row" id="journeyChips"></div>
+          </div>
+          <div class="journey-flow" id="journeyFlow"></div>
+          <div class="guardrail"><strong>Non-negotiable guardrail:</strong> <span id="journeyGuardrail"></span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="model" aria-labelledby="model-title">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Ontology strategy</p>
+          <h2 id="model-title">A generic kernel, extended by bounded profiles.</h2>
+        </div>
+        <p class="section-note">
+          The core is domain-neutral. Lore, tabletop play, mechanics, and personal work add query-value types without
+          redefining provenance or truth.
+        </p>
+      </div>
+      <div class="architecture-map">
+        <article class="kernel-card">
+          <span class="kernel-label">Core · required everywhere</span>
+          <h3>Evidence &amp; identity kernel</h3>
+          <p>
+            Stable identity, aliases, assertions, predicates, citations, rights, visibility, valid time, review, and
+            revision semantics form the durable write model.
+          </p>
+          <div class="kernel-path">Material → MaterialVersion → SourceFragment → KnowledgeChunk
+Entity ← Mention / Alias
+Entity ← SUBJECT — Assertion — OBJECT → Entity | Literal
+Assertion → Evidence → SourceFragment</div>
+          <div class="chips">
+            <span class="chip gold">portable JSONL</span>
+            <span class="chip">scope-aware IDs</span>
+            <span class="chip">deny-first policy</span>
+            <span class="chip">bitemporal-ready</span>
+          </div>
+        </article>
+
+        <div class="extension-grid">
+          <article class="extension-card">
+            <small>Profile family 01</small>
+            <h3>Lore &amp; worlds</h3>
+            <p>Characters, groups, places, events, cultures, concepts, artifacts, timelines, and contested accounts.</p>
+          </article>
+          <article class="extension-card">
+            <small>Profile family 02</small>
+            <h3>Campaign &amp; play</h3>
+            <p>Campaigns, sessions, plans, occurred runs, characters, state, clues, secrets, consequences, and parties.</p>
+          </article>
+          <article class="extension-card">
+            <small>Profile family 03</small>
+            <h3>Rules &amp; systems</h3>
+            <p>Game systems, rulesets, immutable releases, rule elements, stat blocks, builds, and precedence.</p>
+          </article>
+          <article class="extension-card">
+            <small>Profile family 04</small>
+            <h3>Notes &amp; work</h3>
+            <p>People, organizations, topics, projects, action items, decisions, questions, events, time, and location.</p>
+          </article>
+          <div class="pack-strip">
+            <div><b>Optional pack contract:</b> identity seeds + aliases + leaf subtypes + prompt examples + narrow predicates.</div>
+            <span class="chip teal">Eberron pack · validation v1</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="schema" aria-labelledby="schema-title">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Schema explorer</p>
+          <h2 id="schema-title">Inspect the model by responsibility.</h2>
+        </div>
+        <p class="section-note">
+          These are storage and query concepts. Extraction prompts receive only one small closed profile, never this
+          entire catalog.
+        </p>
+      </div>
+      <div class="layer-shell">
+        <div class="layer-tabs" id="layerTabs" role="tablist" aria-label="Ontology layers"></div>
+        <div class="layer-content">
+          <div class="layer-intro">
+            <div>
+              <p class="eyebrow" id="layerEyebrow"></p>
+              <h3 id="layerTitle"></h3>
+              <p id="layerDescription"></p>
+            </div>
+            <div class="relation-path" id="layerPath"></div>
+          </div>
+          <div class="schema-tools">
+            <span class="schema-count" id="schemaCount"></span>
+            <label>
+              <span class="skip-link">Filter node types</span>
+              <input class="schema-search" id="schemaSearch" type="search" placeholder="Filter this layer…" />
+            </label>
+          </div>
+          <div class="schema-grid" id="schemaGrid"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="loader" aria-labelledby="loader-title">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Loader mechanics</p>
+          <h2 id="loader-title">Eight guarded stages from file to answerable graph.</h2>
+        </div>
+        <p class="section-note">
+          Structural and deterministic work is local. Model calls are optional, source-authorized, changed-only, and
+          bounded by chunk, token, and cost caps.
+        </p>
+      </div>
+      <div class="pipeline-shell">
+        <nav class="pipeline-nav" id="pipelineNav" aria-label="Processing stages"></nav>
+        <div class="pipeline-detail">
+          <div>
+            <span class="stage-badge" id="pipelineBadge"></span>
+            <h3 class="pipeline-title" id="pipelineTitle"></h3>
+            <p class="pipeline-description" id="pipelineDescription"></p>
+          </div>
+          <div class="pipeline-grid">
+            <article class="mechanic-card">
+              <small>Core mechanics</small>
+              <ul id="pipelineMechanics"></ul>
+            </article>
+            <pre class="output-code" id="pipelineOutput"></pre>
+          </div>
+          <div class="pipeline-foot">
+            <span><b>Invariant:</b> <span id="pipelineInvariant"></span></span>
+            <span class="cost-chip" id="pipelineCost"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="truth-title">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Truth &amp; continuity</p>
+          <h2 id="truth-title">One statement, six independent dimensions.</h2>
+        </div>
+        <p class="section-note">
+          A single confidence score cannot express disagreement, campaign divergence, plans, spoilers, or historical
+          validity. The ledger keeps those concerns separate.
+        </p>
+      </div>
+      <div class="truth-layout">
+        <div class="truth-axis-list">
+          <div class="truth-axis"><span class="axis-mark">T</span><div><b>Truth status</b><span>asserted · disputed · unknown · false · retracted</span></div></div>
+          <div class="truth-axis"><span class="axis-mark">S</span><div><b>Scope</b><span>setting · adventure · campaign · homebrew · reference · personal</span></div></div>
+          <div class="truth-axis"><span class="axis-mark">A</span><div><b>Actuality</b><span>authored · planned · occurred · hypothetical · superseded</span></div></div>
+          <div class="truth-axis"><span class="axis-mark">V</span><div><b>Visibility</b><span>public · player · DM-only · private · perspective-aware</span></div></div>
+          <div class="truth-axis"><span class="axis-mark">τ</span><div><b>Valid time</b><span>when the claim applies, separate from when it was recorded</span></div></div>
+          <div class="truth-axis"><span class="axis-mark">R</span><div><b>Review</b><span>unreviewed · accepted · rejected · needs review</span></div></div>
+        </div>
+        <article class="assertion-card">
+          <p class="eyebrow">Authoritative statement object</p>
+          <h3>Assertion is the unit of trust.</h3>
+          <p class="section-note">
+            The graph may materialize a familiar direct edge for speed, but its assertion ID always leads back to
+            evidence, qualifiers, attribution, and review.
+          </p>
+          <div class="assertion-code"><span class="gold">Assertion</span> {
+  subject: <span class="teal">Entity</span>,
+  predicate: "LEADS" | "DECIDED" | …,
+  object: <span class="teal">Entity | Literal</span>,
+  evidence: [SourceFragment],
+  truthStatus, scope, actuality,
+  visibility, validTime, reviewStatus,
+  assertedBy?, campaignId?, confidence
+}</div>
+          <div class="chips">
+            <span class="chip gold">reified claim</span>
+            <span class="chip teal">exact evidence</span>
+            <span class="chip">contradiction-safe</span>
+            <span class="chip">projection-ready</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="retrieval" aria-labelledby="retrieval-title">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Question simulator</p>
+          <h2 id="retrieval-title">See how each journey builds a safe context pack.</h2>
+        </div>
+        <p class="section-note">
+          Select a question class. The planner applies hard filters first, then hybrid recall, bounded graph expansion,
+          evidence reranking, and answer assembly.
+        </p>
+      </div>
+      <div class="simulator">
+        <nav class="scenario-list" id="scenarioList" aria-label="Question classes"></nav>
+        <div class="scenario-main">
+          <span class="question-label" id="scenarioLabel"></span>
+          <h3 class="scenario-question" id="scenarioQuestion"></h3>
+          <div class="scenario-flow" id="scenarioFlow"></div>
+          <div class="context-pack">
+            <div class="context-pack-head">
+              <b>Context contract</b>
+              <button class="copy-button" id="copyContext" type="button">Copy summary</button>
+            </div>
+            <p id="contextSummary"></p>
+            <div class="filter-row" id="contextFilters"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="storage-title">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Storage contract</p>
+          <h2 id="storage-title">One write model, three purpose-built read surfaces.</h2>
+        </div>
+        <p class="section-note">A projection may fail, change shape, or be replaced without losing the semantic source of truth.</p>
+      </div>
+      <div class="contract-grid">
+        <article class="contract-card">
+          <div class="contract-card-head"><span>Authoritative</span><h3>Evidence ledger</h3></div>
+          <div class="contract-row"><b>Stores</b><span>JSONL records, immutable IDs, evidence, assertions, review items, vectors</span></div>
+          <div class="contract-row"><b>Optimizes</b><span>Portability, audit, replay, deterministic stage recovery</span></div>
+          <div class="contract-row"><b>Never assumes</b><span>Aura, Obsidian, Eberron, or a particular model provider</span></div>
+        </article>
+        <article class="contract-card">
+          <div class="contract-card-head"><span>Projection A</span><h3>Neo4j Aura</h3></div>
+          <div class="contract-row"><b>Stores</b><span>Typed nodes, assertion/evidence edges, direct traversal edges, indexes</span></div>
+          <div class="contract-row"><b>Optimizes</b><span>Neighborhood queries, hybrid retrieval, timelines, continuity checks</span></div>
+          <div class="contract-row"><b>Rebuild rule</b><span>MERGE by stable ID; loader namespace limits cleanup</span></div>
+        </article>
+        <article class="contract-card">
+          <div class="contract-card-head"><span>Projection B</span><h3>Obsidian vault</h3></div>
+          <div class="contract-row"><b>Stores</b><span>Markdown dossiers, source notes, YAML properties, backlinks, optional evidence</span></div>
+          <div class="contract-row"><b>Optimizes</b><span>Human browsing, editing, capture, portability, notebook-only use</span></div>
+          <div class="contract-row"><b>Safety rule</b><span>Only marked generated files are eligible for cleanup</span></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="documents" aria-labelledby="documents-title">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Product document set</p>
+          <h2 id="documents-title">Requirements, implementation, and narrative stay aligned.</h2>
+        </div>
+        <p class="section-note">
+          The interactive summaries below link to complete Markdown artifacts suitable for review, version control, or
+          adaptation into a planning system.
+        </p>
+      </div>
+      <div class="docs-shell">
+        <div class="docs-tabs" id="docsTabs" role="tablist" aria-label="Product documents"></div>
+        <div class="docs-content">
+          <div class="doc-summary">
+            <p class="eyebrow" id="docEyebrow"></p>
+            <h3 id="docTitle"></h3>
+            <p id="docDescription"></p>
+            <a class="doc-download" id="docDownload" href="#" download>Download complete document ↓</a>
+          </div>
+          <div class="doc-outline" id="docOutline"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="easy-title">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Three implementation tracks</p>
+          <h2 id="easy-title">Start at the lowest useful operational weight.</h2>
+        </div>
+        <p class="section-note">The tracks are additive. A cheap pilot can validate questions before the full durable model is loaded.</p>
+      </div>
+      <div class="easy-grid">
+        <article class="easy-card recommended">
+          <small>Recommended first</small>
+          <h3>Ledger + Obsidian</h3>
+          <p>The easiest durable path: ingest locally, audit, and generate a vault. Add hosted extraction only after a small review sample.</p>
+          <ul><li>No database required</li><li>Human-inspectable output</li><li>Preserves the future Aura path</li></ul>
+        </article>
+        <article class="easy-card">
+          <small>Disposable discovery</small>
+          <h3>Simple Neo4j pilot</h3>
+          <p>Run pre-parsed approved text through one closed profile to validate labels, graph questions, and visual value.</p>
+          <ul><li>Fast feedback on one source</li><li>Not the canonical truth model</li><li>Rebuild after the pilot</li></ul>
+        </article>
+        <article class="easy-card">
+          <small>Full capability</small>
+          <h3>Ledger + Aura + app</h3>
+          <p>Use after the journeys are proven: hybrid retrieval, bounded graph expansion, campaign-safe contexts, and operational views.</p>
+          <ul><li>Rich cross-source traversal</li><li>Player/DM policy filters</li><li>Same portable ledger</li></ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="budget-title">
+      <div class="budget-panel">
+        <div>
+          <p class="eyebrow">Token discipline</p>
+          <h2 id="budget-title">Spend models on ambiguity, not plumbing.</h2>
+          <p>
+            Page recovery, chunking, hashes, exclusions, known aliases, schema validation, audit, projection, and most
+            filtering are local. Every paid stage is opt-in and budgeted.
+          </p>
+          <div class="chips">
+            <span class="chip teal">changed-only</span>
+            <span class="chip">per-source consent</span>
+            <span class="chip">compact profiles</span>
+            <span class="chip">local embeddings</span>
+          </div>
+        </div>
+        <div class="budget-ladder">
+          <div class="budget-step"><strong>Parse</strong><span>Recover structure, pages, headings, tables</span><em>local</em></div>
+          <div class="budget-step"><strong>Resolve</strong><span>IDs, exact aliases, type/scope constraints</span><em>local</em></div>
+          <div class="budget-step"><strong>Embed</strong><span>Changed chunks only; local preferred</span><em>low</em></div>
+          <div class="budget-step"><strong>Extract</strong><span>Eligible chunks with one closed profile</span><em>capped</em></div>
+          <div class="budget-step"><strong>Adjudicate</strong><span>Only unresolved, high-value collisions</span><em>rare</em></div>
+          <div class="budget-step"><strong>Answer</strong><span>Small cited context pack, not whole books</span><em>per query</em></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="delivery" aria-labelledby="delivery-title">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Implementation sequence</p>
+          <h2 id="delivery-title">Prove each journey before scaling the corpus.</h2>
+        </div>
+        <p class="section-note">Every phase produces a usable artifact and an evaluation result, not merely more graph volume.</p>
+      </div>
+      <div class="roadmap">
+        <article class="phase"><span class="phase-number">Phase 01 · Local spine</span><h3>Parse &amp; inspect</h3><p>Three representative sources, generic defaults, local ledger, Obsidian output.</p><ul><li>Rights manifest</li><li>Chunk/address audit</li><li>Idempotence test</li><li>No model required</li></ul></article>
+        <article class="phase"><span class="phase-number">Phase 02 · Lore pilot</span><h3>Calibrate Eberron</h3><p>Activate the optional pack on a small sample; validate contested, temporal, and alias questions.</p><ul><li>10–30 chunk extraction</li><li>Identity precision sample</li><li>Citation coverage</li><li>Generic profile regression</li></ul></article>
+        <article class="phase"><span class="phase-number">Phase 03 · Play &amp; notes</span><h3>Exercise all journeys</h3><p>Add one campaign plus ordinary project notes; test continuity and work recall.</p><ul><li>Plan vs occurred</li><li>Player-safe leakage suite</li><li>Decisions/questions/tasks</li><li>Ruleset pinning</li></ul></article>
+        <article class="phase"><span class="phase-number">Phase 04 · Scale</span><h3>Load incrementally</h3><p>Expand books and campaigns only when audit quality and query usefulness hold.</p><ul><li>Changed-only jobs</li><li>Review queue cadence</li><li>Aura hybrid retrieval</li><li>Pack/version governance</li></ul></article>
+      </div>
+    </section>
+
+    <footer>
+      <span>LoreGraph system architecture · generic core · Eberron validation pack</span>
+      <span>Evidence ledger → Neo4j Aura · Obsidian · application</span>
+    </footer>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite">Context summary copied.</div>
+
+  <script>
+    "use strict";
+
+    const journeys = [
+      {
+        label: "General lore support",
+        kicker: "Research & reference",
+        tab: "Cross-source answers with provenance and disagreement.",
+        description: "Ingest books, articles, maps, and curated setting packs; answer entity, relationship, temporal, and contested-lore questions without flattening sources into a single unsupported truth.",
+        chips: ["profile: lore", "optional setting pack", "citations", "temporal + contested"],
+        guardrail: "A setting pack can seed identity and narrow vocabulary, but it cannot establish facts or alter the generic evidence kernel.",
+        stages: [
+          ["01", "Collect", "Books, articles, maps, source notes, editions, rights."],
+          ["02", "Structure", "Lore profile resolves people, groups, places, events, time."],
+          ["03", "Retrieve", "Scope and time gate, hybrid recall, evidence expansion."],
+          ["04", "Answer", "Cited facts, theories, attribution, disagreement, uncertainty."]
+        ]
+      },
+      {
+        label: "DM campaign maintenance",
+        kicker: "Prepare, run, remember",
+        tab: "Plans, played history, state, rules, and secrets.",
+        description: "Maintain one or more campaigns without mixing published possibilities, homebrew plans, occurred play, character state, rules versions, or player knowledge. The graph becomes operational continuity for prep and recall.",
+        chips: ["profiles: adventure + campaign", "character state", "rules pinning", "player-safe"],
+        guardrail: "Prepared Scene and Encounter definitions never become campaign history until an occurred SceneRun, EncounterRun, session record, or accepted recap establishes them.",
+        stages: [
+          ["01", "Prepare", "Adventure, scene, encounter, clue, secret, ruling, handout."],
+          ["02", "Run", "Session evidence creates occurred runs, events, and state."],
+          ["03", "Maintain", "Builds, resources, inventory, clocks, consequences, revisions."],
+          ["04", "Assist", "Prep briefs, recaps, continuity checks, cited rules, safe player views."]
+        ]
+      },
+      {
+        label: "Knowledge & note-keeping",
+        kicker: "Capture, connect, continue",
+        tab: "People, projects, decisions, questions, and follow-ups.",
+        description: "Treat Markdown, PDFs, meeting records, and saved references as a personal knowledge workspace. Obsidian remains editable while the evidence ledger adds structured recall, provenance, and optional graph retrieval.",
+        chips: ["profile: notes", "Obsidian-first", "decisions + questions", "private by default"],
+        guardrail: "Generated files live in marked namespaces; export may clean only stale LoreGraph-generated notes and must never delete an unmarked hand-authored file.",
+        stages: [
+          ["01", "Capture", "Notes, documents, meetings, webpages, sources, private scope."],
+          ["02", "Connect", "People, organizations, topics, projects, tasks, decisions."],
+          ["03", "Review", "Open questions, dependencies, provenance, status, duplicates."],
+          ["04", "Continue", "Backlinks, project dossiers, cited recall, next actions."]
+        ]
+      }
+    ];
+
+    const layers = [
+      {
+        label: "Evidence kernel",
+        eyebrow: "Layer 0 · Domain-neutral",
+        title: "The portable source of truth",
+        description: "Stable identity, reified assertions, exact evidence, access, review, and revision semantics serve every journey and every projection.",
+        path: "Material → MaterialVersion → SourceFragment\nSourceFragment → KnowledgeChunk\nAssertion → Evidence → SourceFragment",
+        nodes: [
+          ["Entity", "kernel", "Stable referent with scoped identity, aliases, and mentions."],
+          ["Assertion", "kernel", "Authoritative proposition carrying independent truth qualifiers."],
+          ["Predicate", "kernel", "Controlled relationship or property semantics."],
+          ["LiteralValue", "kernel", "Typed text, number, date, quantity, or structured value."],
+          ["Evidence", "citation", "Exact supporting or contradicting source span."],
+          ["AccessPolicy", "policy", "Rights, visibility, attribution, and processing permissions."],
+          ["ReviewItem", "workflow", "Ambiguity or invalid candidate requiring a human decision."],
+          ["Revision", "version", "Immutable change record for authored or accepted state."]
+        ]
+      },
+      {
+        label: "Knowledge",
+        eyebrow: "Layer 1 · General notes",
+        title: "Everyday knowledge without a giant ontology",
+        description: "A compact profile captures the objects people need to retrieve from personal or work notes. The source note remains evidence; these nodes provide stable semantic handles.",
+        path: "Person ─WORKS_ON→ Project\nActionItem ─PART_OF_PROJECT→ Project\nDecision ─RESOLVES_QUESTION→ Question",
+        nodes: [
+          ["Person", "identity", "Real or documented individual, author, expert, contact, or stakeholder."],
+          ["Organization", "identity", "Company, institution, team, government, or community."],
+          ["Topic", "knowledge", "Stable subject, theme, domain, tag, or controlled concept."],
+          ["Project", "work", "Bounded initiative or ongoing area."],
+          ["ActionItem", "work", "Task, follow-up, milestone, or reminder."],
+          ["Decision", "work", "Recorded choice with rationale, status, and evidence."],
+          ["Question", "work", "Open, research, or answered question worth tracking."],
+          ["Event", "time", "Meeting, deadline, milestone, incident, or other occurrence."],
+          ["TimeInstant", "time", "Real or fictional point-like time with calendar and precision."],
+          ["Location", "place", "Real or fictional place at any relevant scale."]
+        ]
+      },
+      {
+        label: "Lore & worlds",
+        eyebrow: "Layer 2 · Setting-agnostic",
+        title: "Worlds as stable referents and evidence-backed history",
+        description: "High-value types cover fictional people, groups, places, history, cultures, cosmology, technologies, and artifacts. Optional packs add aliases and narrow vocabulary.",
+        path: "Character ─MEMBER_OF→ Faction\nLocation ─PART_OF_LOCATION→ Location\nHistoricalEvent ─OCCURRED_AT→ Location",
+        nodes: [
+          ["Character", "identity", "Persistent fictional individual; PC or NPC is contextual."],
+          ["CreatureArchetype", "identity", "A kind of creature, separate from individual and stat block."],
+          ["Faction", "world", "Nation, church, guild, agency, military, house, or other group."],
+          ["Location", "world", "Plane, region, city, site, structure, dungeon, room, or route."],
+          ["HistoricalEvent", "history", "War, treaty, catastrophe, founding, succession, or other occurrence."],
+          ["TimeInstant", "time", "Faithful source time expression with calendar and uncertainty."],
+          ["TimeInterval", "time", "Era or duration with optional endpoints."],
+          ["LoreEntity", "world", "Culture, religion, language, technology, law, office, or concept."],
+          ["ItemDefinition", "definition", "Persistent artifact, vehicle, magic item, or mundane object type."]
+        ]
+      },
+      {
+        label: "Campaign & play",
+        eyebrow: "Layer 3 · Operational continuity",
+        title: "Plans, play, and mutable state without destructive updates",
+        description: "Prepared content and observed play cross-reference one another. Characters retain identity while builds, resources, conditions, inventory, and table history evolve.",
+        path: "Session → SceneRun ─REALIZES→ Scene\nEncounterRun ─REALIZES→ Encounter\nCharacter → Build + State + ItemInstance",
+        nodes: [
+          ["Campaign", "scope", "Sustained table continuity and campaign canon."],
+          ["CampaignRevision", "version", "Immutable campaign decision, retcon, or state revision."],
+          ["Session", "play", "Real-world sitting or asynchronous play interval."],
+          ["Scene", "plan", "Prepared unit of dramatic continuity."],
+          ["SceneRun", "occurred", "A scene as actually played, with outcome and world time."],
+          ["Encounter", "plan", "Prepared goal-oriented challenge of any kind."],
+          ["EncounterRun", "occurred", "Observed encounter execution and outcome."],
+          ["NarrativeElement", "story", "Arc, mystery, clue, secret, choice, consequence, or payoff."],
+          ["CharacterBuild", "state", "Immutable mechanical build at one progression point."],
+          ["CharacterState", "state", "Runtime snapshot of resources, conditions, and location."],
+          ["ItemInstance", "state", "A particular object with continuity-scoped ownership."],
+          ["GMTool", "tool", "Table, generator, clock, ruling, handout, or prep aid."]
+        ]
+      },
+      {
+        label: "Rules systems",
+        eyebrow: "Layer 4 · Versioned mechanics",
+        title: "System-as-data, pinned to exact releases",
+        description: "Definitions and exact wording remain separate. A campaign selects a ruleset version; builds, rulings, house rules, and exceptions record precedence explicitly.",
+        path: "GameSystem → Ruleset → RulesetVersion\nRuleElement → RuleElementVersion\nCharacterBuild ─USES_RULE_ELEMENT→ RuleElementVersion",
+        nodes: [
+          ["GameSystem", "version", "Product or mechanics family."],
+          ["Ruleset", "version", "Mechanically coherent rules family."],
+          ["RulesetVersion", "version", "Immutable citable release or errata baseline."],
+          ["RuleElement", "definition", "Stable rule, class, spell, condition, item, or procedure identity."],
+          ["RuleElementVersion", "version", "Exact mechanics and wording for one release."],
+          ["StatDefinition", "adapter", "Typed statistic: number, rating, die, modifier, or formula."],
+          ["ResourceDefinition", "adapter", "Trackable pool such as HP, stress, heat, slots, or tokens."],
+          ["DiceExpression", "adapter", "Parsed and original resolution expression."],
+          ["StatBlock", "definition", "Rules template pinned to a RulesetVersion."],
+          ["ConversionMapping", "version", "Exact, partial, renamed, split, merged, or GM-review mapping."]
+        ]
+      },
+      {
+        label: "Sources & RAG",
+        eyebrow: "Layer 5 · Read projections",
+        title: "Addressable sources and policy-first retrieval",
+        description: "Chunks and embeddings optimize discovery, but citations terminate at stable fragments and material versions. Retrieval applies rights, visibility, scope, actuality, ruleset, and time before expansion.",
+        path: "Material → MaterialVersion → SourceFragment\nSourceFragment → KnowledgeChunk → Embedding\nKnowledgeChunk ─MENTIONS→ Entity",
+        nodes: [
+          ["Material", "source", "Conceptual book, map, webpage, meeting record, note, or rulebook."],
+          ["MaterialVersion", "source", "Specific edition, file, release, or web snapshot."],
+          ["SourceFragment", "citation", "Addressable page, section, quote, time range, or map region."],
+          ["KnowledgeChunk", "retrieval", "Authorized unit carrying lineage and filter metadata."],
+          ["Embedding", "retrieval", "Model-specific vector tied to a chunk hash and model version."],
+          ["Citation", "citation", "Support, contradiction, definition, depiction, or adaptation link."],
+          ["RightsPolicy", "policy", "Allowed actions, indexing mode, attribution, and remote-processing rules."],
+          ["MapRegion", "source", "Pixel or vector selector on a particular map version."]
+        ]
+      }
+    ];
+
+    const pipeline = [
+      {
+        title: "Register & govern",
+        badge: "Stage 01 · Rights before processing",
+        description: "Register the conceptual material and immutable version before any text is indexed. Edition, scope, actuality, visibility, rights, attribution, and hosted-processing permission become inherited policy.",
+        mechanics: ["Hash the input and preserve source/edition metadata", "Validate indexing and attribution requirements", "Select generic defaults or an explicit rules/setting/campaign pack"],
+        output: "Material\n └─ MaterialVersion\n    • sha256 / edition\n    • sourceKind / scope\n    • rightsPolicyId\n    • visibility\n    • remoteProcessingAllowed",
+        invariant: "A permissive source never grants permission to another source or version.",
+        cost: "No LLM"
+      },
+      {
+        title: "Parse structure",
+        badge: "Stage 02 · Preserve addressability",
+        description: "Recover text with page boundaries, heading paths, reading order, tables, stat blocks, and exclusions intact. SourceFragments keep durable selectors so citations survive later rechunking.",
+        mechanics: ["Use layout/OCR parser when needed; lightweight fallback otherwise", "Detect headings, sections, tables, atomic blocks, and excluded pages", "Record page range, heading path, offsets, and exact-text hash"],
+        output: "MaterialVersion\n └─ SourceFragment\n    • pageStart / pageEnd\n    • headingPath\n    • selectorValue\n    • exactTextHash",
+        invariant: "Page number alone is not a durable citation.",
+        cost: "No LLM"
+      },
+      {
+        title: "Build chunks",
+        badge: "Stage 03 · Deterministic retrieval units",
+        description: "Create compact KnowledgeChunks along natural semantic boundaries. Zero extraction overlap avoids paying twice; previous/next links recover local context during retrieval.",
+        mechanics: ["Prefer headings, paragraphs, lists, and atomic tables over fixed windows", "Target roughly 700 tokens with explicit caps", "Fingerprint parser, chunker, source version, span, and content"],
+        output: "SourceFragment\n └─ KnowledgeChunk\n    • text / tokenCount\n    • contentType / profile\n    • previousId / nextId\n    • chunkHash",
+        invariant: "A retrieval chunk is a rebuildable projection, not the original source.",
+        cost: "No LLM"
+      },
+      {
+        title: "Route profile",
+        badge: "Stage 04 · Small ontology, right task",
+        description: "Choose one closed extraction profile from source kind and deterministic content signals. The generic kernel remains stable while lore, adventure, campaign, character, rules, notes, or a setting pack constrains vocabulary.",
+        mechanics: ["Honor explicit profile selection when schema-valid", "Otherwise route note/document/web, campaign, adventure, rules, then lore", "Attach only allowed node types, predicates, and identity candidates"],
+        output: "ProfileRouter\n ├─ lore / lore_eberron\n ├─ rules / adventure\n ├─ campaign / character\n └─ notes",
+        invariant: "The model never receives the entire ontology when one profile is enough.",
+        cost: "No LLM"
+      },
+      {
+        title: "Extract candidates",
+        badge: "Stage 05 · Selective semantic work",
+        description: "Run deterministic alias and mechanics extractors first. Eligible chunks may then produce schema-constrained candidate entities and claims with exact supporting quotes; model output is never accepted canon automatically.",
+        mechanics: ["Apply identity-pack aliases and structured parsers locally", "Gate remote calls by source permission, changed fingerprint, and budget", "Require strict schema, grounded quote, confidence, and derivation metadata"],
+        output: "CandidateAssertion {\n  subject, predicate, object,\n  evidenceQuote, confidence,\n  scope, actuality,\n  reviewStatus: UNREVIEWED\n}",
+        invariant: "The extractor proposes; validation and review decide.",
+        cost: "Selective API"
+      },
+      {
+        title: "Resolve identity",
+        badge: "Stage 06 · Conservative matching",
+        description: "Match candidates to stable, scope-aware identities using deterministic keys, exact aliases, type constraints, context, campaign, ruleset, location, and time. Ambiguity becomes a review item.",
+        mechanics: ["Deterministic ID and exact normalized alias first", "Block cross-type, cross-campaign, and incompatible-version merges", "Use fuzzy or model adjudication only for unresolved high-value collisions"],
+        output: "Candidate mention\n ├─ EXACT_MATCH → Entity\n ├─ POSSIBLE_MATCH → ReviewItem\n └─ NEW_IDENTITY → Provisional Entity",
+        invariant: "Uncertainty creates review work, not a false merge.",
+        cost: "Mostly local"
+      },
+      {
+        title: "Validate & commit",
+        badge: "Stage 07 · Evidence ledger",
+        description: "Validate profile closure, predicate domain/range, quote grounding, endpoint existence, provenance, scope, and vector metadata. Valid propositions enter the assertion ledger; invalid candidates are quarantined.",
+        mechanics: ["Attach exact supporting or contradicting fragments", "Keep truth, scope, actuality, visibility, time, and review independent", "Commit records atomically and mark stage fingerprints only after success"],
+        output: "Assertion\n ├─ SUBJECT / PREDICATE / OBJECT\n ├─ Evidence → SourceFragment\n ├─ qualifiers + review\n └─ supersedes / contradicts / attributedBy",
+        invariant: "Conflicting evidence can coexist without destructive flattening.",
+        cost: "Local + review"
+      },
+      {
+        title: "Project & retrieve",
+        badge: "Stage 08 · Serve every journey",
+        description: "Replay the ledger into Neo4j and/or Obsidian. For questions, apply deny-first filters, combine lexical and vector recall, expand a bounded assertion neighborhood, rerank evidence, and assemble a cited context.",
+        mechanics: ["MERGE stable graph records and materialize direct edges with assertionId", "Render marked Markdown notes, YAML properties, and backlinks", "Filter → hybrid recall → graph expansion → evidence rerank → context"],
+        output: "Question\n → principal + workspace filters\n → lexical + vector candidates\n → assertion neighborhood\n → cited context pack\n → structured answer",
+        invariant: "Prohibited text is excluded before search and expansion, not redacted afterward.",
+        cost: "Embeddings + answer"
+      }
+    ];
+
+    const scenarios = [
+      {
+        type: "Lore · contested",
+        question: "What caused the catastrophe, and which explanations are only theories?",
+        label: "General lore · competing accounts",
+        steps: [["01", "Scope gate", "Select setting, editions, time, and allowed source classes."], ["02", "Hybrid recall", "Find event, theory, attribution, and relevant fragments."], ["03", "Evidence graph", "Expand support, contradiction, source authority, and valid time."], ["04", "Structured answer", "Separate established claims, theories, beliefs, and unknowns."]],
+        summary: "The context includes reviewed assertions about the event, each theory’s attribution and confidence, supporting and contradicting fragments, source versions, and locators. It does not invent a single cause.",
+        filters: ["journey: lore", "truth: asserted | disputed | unknown", "actuality: authored", "scope: selected world", "time: relevant era"]
+      },
+      {
+        type: "Lore · temporal",
+        question: "Who led this organization at the requested point in history?",
+        label: "General lore · time-bounded identity",
+        steps: [["01", "Resolve intent", "Identify organization, branch, world, and requested period."], ["02", "Find claims", "Retrieve leadership and office assertions with intervals."], ["03", "Reconcile", "Prefer reviewed direct evidence while preserving disputed succession."], ["04", "Answer with time", "Return person, office, interval, caveat, and citation."]],
+        summary: "The context contains identity, office and leadership assertions, valid-time intervals, succession, aliases, and source fragments. Present-day leadership is never substituted for the requested date.",
+        filters: ["predicate: LEADS | HOLDS_OFFICE", "time: requested interval", "review: accepted", "source: direct first", "scope: selected world"]
+      },
+      {
+        type: "DM · history",
+        question: "What did our party actually do during the last visit?",
+        label: "Campaign maintenance · occurred play",
+        steps: [["01", "Campaign gate", "Require the selected continuity and principal membership."], ["02", "Actuality gate", "Select occurred runs, play events, accepted recaps, and state."], ["03", "Expand", "Connect PCs, NPCs, locations, items, consequences, and sessions."], ["04", "Chronology", "Assemble played order with citations to table records."]],
+        summary: "The context contains occurred play records and campaign-scoped assertions only. Prepared scenes, skipped encounters, and adventure possibilities are excluded unless the query asks for comparison.",
+        filters: ["journey: campaign", "campaign: selected", "actuality: occurred", "visibility: DM | party", "order: session sequence"]
+      },
+      {
+        type: "DM · player-safe",
+        question: "What does this character know about the patron?",
+        label: "Campaign assistance · perspective-safe",
+        steps: [["01", "Principal gate", "Resolve user, character ownership, campaign, and role."], ["02", "Perspective", "Select known, believed, suspected, or reported assertions."], ["03", "Safe expansion", "Traverse only already-authorized nodes and fragments."], ["04", "In-character answer", "Separate knowledge, suspicion, and rumor without leakage."]],
+        summary: "The context includes only authorized perspective states and visible evidence. Objective DM-only assertions may exist in the ledger but are excluded before vector search and graph expansion.",
+        filters: ["journey: campaign", "principal: owning player", "visibility: authorized", "perspective: character", "deny-first: true"]
+      },
+      {
+        type: "Notes · decisions",
+        question: "What did we decide about Project Northstar, and why?",
+        label: "Knowledge notes · decision recall",
+        steps: [["01", "Workspace gate", "Select personal workspace, project, and visibility."], ["02", "Entity recall", "Resolve project, meeting/event, participants, and topics."], ["03", "Evidence expansion", "Retrieve decisions, resolved questions, rationale, and source notes."], ["04", "Decision brief", "Return accepted choices, dates, owners, caveats, and citations."]],
+        summary: "The context contains project-scoped Decision and Question records, relevant meeting/source fragments, participants, rationale, and supersession. Draft alternatives remain distinguishable from the accepted decision.",
+        filters: ["journey: notes", "scope: personal | reference", "project: Northstar", "review: accepted", "visibility: private"]
+      },
+      {
+        type: "Notes · follow-ups",
+        question: "Which open action items depend on this milestone?",
+        label: "Knowledge notes · next actions",
+        steps: [["01", "Resolve milestone", "Match project, action item, and referenced event."], ["02", "Status filter", "Keep open or blocked items in the selected workspace."], ["03", "Dependency graph", "Traverse DEPENDS_ON, PART_OF_PROJECT, and ASSIGNED_TO."], ["04", "Action view", "Return owners, blockers, sources, and next review date."]],
+        summary: "The context includes current action items, dependencies, project membership, assignees, and cited notes. Completed or superseded tasks are excluded unless they explain an active blocker.",
+        filters: ["journey: notes", "status: open | blocked", "predicate: DEPENDS_ON", "project: selected", "visibility: authorized"]
+      }
+    ];
+
+    const documents = [
+      {
+        code: "PRD",
+        title: "Product Requirements Document",
+        description: "Defines the user problem, product principles, three journeys, functional and non-functional requirements, MVP boundaries, success measures, risks, and release acceptance.",
+        href: "/docs/loregraph-prd.md",
+        blocks: [
+          ["Promise", "One cited knowledge system for lore, campaigns, and notes."],
+          ["Users", "Lore researcher, game master, and personal knowledge worker."],
+          ["MVP", "Local ingestion, profiles, assertion ledger, audit, Aura/Obsidian projections."],
+          ["Acceptance", "All three journey suites pass with provenance, isolation, and no leakage."]
+        ]
+      },
+      {
+        code: "TDD",
+        title: "Technical Design Document",
+        description: "Specifies the source/identity/assertion model, profile and pack governance, eight-stage pipeline, resolution algorithm, retrieval planners, storage contracts, interfaces, security, reliability, tests, and deployment.",
+        href: "/docs/loregraph-tdd.md",
+        blocks: [
+          ["Write model", "Portable JSONL evidence ledger; projections are replayable read models."],
+          ["Ontology", "Generic kernel plus seven compact profiles and optional packs."],
+          ["Retrieval", "Deny-first filters, hybrid recall, bounded graph expansion, evidence rerank."],
+          ["Quality", "Idempotence, strict schema, quote grounding, audit, and journey tests."]
+        ]
+      },
+      {
+        code: "PRFAQ",
+        title: "Press Release & Frequently Asked Questions",
+        description: "Explains the product in customer language, answers why it is not Eberron-specific, compares vector-only and simple graph pilots, and records internal decisions about scope, risk, and the easiest useful start.",
+        href: "/docs/loregraph-prfaq.md",
+        blocks: [
+          ["Headline", "Personal libraries and campaign notes become cited, connected knowledge."],
+          ["Differentiator", "Truth qualifiers and provenance survive across graph, vector, and vault."],
+          ["Easy start", "Ledger plus Obsidian first; simple graph pipeline for disposable discovery."],
+          ["Generic proof", "Empty default pack, non-TTRPG notes suite, explicit Eberron activation."]
+        ]
+      }
+    ];
+
+    const state = {
+      journey: 0,
+      layer: 0,
+      pipeline: 0,
+      scenario: 0,
+      document: 0
+    };
+
+    const byId = (id) => document.getElementById(id);
+    const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, (character) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      "'": "&#39;",
+      '"': "&quot;"
+    })[character]);
+
+    function renderJourneys() {
+      const tabs = byId("journeyTabs");
+      tabs.innerHTML = journeys.map((journey, index) =>
+        '<button class="journey-tab ' + (index === state.journey ? "active" : "") +
+        '" type="button" role="tab" aria-selected="' + (index === state.journey) +
+        '" data-journey="' + index + '"><small>Journey 0' + (index + 1) + '</small><b>' +
+        escapeHtml(journey.label) + '</b><span>' + escapeHtml(journey.tab) + '</span></button>'
+      ).join("");
+      tabs.querySelectorAll("[data-journey]").forEach((button) => {
+        button.addEventListener("click", () => {
+          state.journey = Number(button.dataset.journey);
+          renderJourneys();
+        });
+      });
+
+      const journey = journeys[state.journey];
+      byId("journeyEyebrow").textContent = "Journey 0" + (state.journey + 1) + " · " + journey.kicker;
+      byId("journeyTitle").textContent = journey.label;
+      byId("journeyDescription").textContent = journey.description;
+      byId("journeyChips").innerHTML = journey.chips.map((chip, index) =>
+        '<span class="chip ' + (index === 0 ? "gold" : "") + '">' + escapeHtml(chip) + '</span>'
+      ).join("");
+      byId("journeyFlow").innerHTML = journey.stages.map((stage) =>
+        '<article class="mini-stage"><small>' + escapeHtml(stage[0]) + '</small><b>' +
+        escapeHtml(stage[1]) + '</b><p>' + escapeHtml(stage[2]) + '</p></article>'
+      ).join("");
+      byId("journeyGuardrail").textContent = journey.guardrail;
+    }
+
+    function renderSchemaCards() {
+      const layer = layers[state.layer];
+      const query = byId("schemaSearch").value.trim().toLowerCase();
+      const filtered = layer.nodes.filter((node) => node.join(" ").toLowerCase().includes(query));
+      byId("schemaCount").textContent = filtered.length + " of " + layer.nodes.length + " node types";
+      byId("schemaGrid").innerHTML = filtered.length
+        ? filtered.map((node) =>
+          '<article class="schema-card"><span class="type">' + escapeHtml(node[1]) +
+          '</span><b>' + escapeHtml(node[0]) + '</b><p>' + escapeHtml(node[2]) + '</p></article>'
+        ).join("")
+        : '<div class="empty-state">No node types match this filter.</div>';
+    }
+
+    function renderLayers() {
+      const tabs = byId("layerTabs");
+      tabs.innerHTML = layers.map((layer, index) =>
+        '<button class="layer-tab ' + (index === state.layer ? "active" : "") +
+        '" type="button" role="tab" aria-selected="' + (index === state.layer) +
+        '" data-layer="' + index + '"><span>0' + index + '</span><b>' +
+        escapeHtml(layer.label) + '</b></button>'
+      ).join("");
+      tabs.querySelectorAll("[data-layer]").forEach((button) => {
+        button.addEventListener("click", () => {
+          state.layer = Number(button.dataset.layer);
+          byId("schemaSearch").value = "";
+          renderLayers();
+        });
+      });
+
+      const layer = layers[state.layer];
+      byId("layerEyebrow").textContent = layer.eyebrow;
+      byId("layerTitle").textContent = layer.title;
+      byId("layerDescription").textContent = layer.description;
+      byId("layerPath").textContent = layer.path;
+      renderSchemaCards();
+    }
+
+    function renderPipeline() {
+      const nav = byId("pipelineNav");
+      nav.innerHTML = '<div class="pipeline-nav-label">Processing stages</div>' + pipeline.map((stage, index) =>
+        '<button class="pipeline-step ' + (index === state.pipeline ? "active" : "") +
+        '" type="button" data-pipeline="' + index + '" aria-current="' +
+        (index === state.pipeline ? "step" : "false") + '"><span class="step-index">0' +
+        (index + 1) + '</span><b>' + escapeHtml(stage.title) + '</b></button>'
+      ).join("");
+      nav.querySelectorAll("[data-pipeline]").forEach((button) => {
+        button.addEventListener("click", () => {
+          state.pipeline = Number(button.dataset.pipeline);
+          renderPipeline();
+        });
+      });
+
+      const stage = pipeline[state.pipeline];
+      byId("pipelineBadge").textContent = stage.badge;
+      byId("pipelineTitle").textContent = stage.title;
+      byId("pipelineDescription").textContent = stage.description;
+      byId("pipelineMechanics").innerHTML = stage.mechanics.map((item) => "<li>" + escapeHtml(item) + "</li>").join("");
+      byId("pipelineOutput").textContent = stage.output;
+      byId("pipelineInvariant").textContent = stage.invariant;
+      byId("pipelineCost").textContent = stage.cost;
+    }
+
+    function renderScenario() {
+      const list = byId("scenarioList");
+      list.innerHTML = '<div class="scenario-list-label">Question classes</div>' + scenarios.map((scenario, index) =>
+        '<button class="scenario-button ' + (index === state.scenario ? "active" : "") +
+        '" type="button" data-scenario="' + index + '"><small>' + escapeHtml(scenario.type) +
+        '</small><b>' + escapeHtml(scenario.question) + '</b></button>'
+      ).join("");
+      list.querySelectorAll("[data-scenario]").forEach((button) => {
+        button.addEventListener("click", () => {
+          state.scenario = Number(button.dataset.scenario);
+          renderScenario();
+        });
+      });
+
+      const scenario = scenarios[state.scenario];
+      byId("scenarioLabel").textContent = scenario.label;
+      byId("scenarioQuestion").textContent = scenario.question;
+      byId("scenarioFlow").innerHTML = scenario.steps.map((step) =>
+        '<article class="flow-step"><span>' + escapeHtml(step[0]) + '</span><b>' +
+        escapeHtml(step[1]) + '</b><p>' + escapeHtml(step[2]) + '</p></article>'
+      ).join("");
+      byId("contextSummary").textContent = scenario.summary;
+      byId("contextFilters").innerHTML = scenario.filters.map((filter) =>
+        '<span class="filter">' + escapeHtml(filter) + '</span>'
+      ).join("");
+    }
+
+    function renderDocuments() {
+      const tabs = byId("docsTabs");
+      tabs.innerHTML = documents.map((documentItem, index) =>
+        '<button class="docs-tab ' + (index === state.document ? "active" : "") +
+        '" type="button" role="tab" aria-selected="' + (index === state.document) +
+        '" data-document="' + index + '"><small>Artifact 0' + (index + 1) +
+        '</small><b>' + escapeHtml(documentItem.code) + '</b></button>'
+      ).join("");
+      tabs.querySelectorAll("[data-document]").forEach((button) => {
+        button.addEventListener("click", () => {
+          state.document = Number(button.dataset.document);
+          renderDocuments();
+        });
+      });
+
+      const documentItem = documents[state.document];
+      byId("docEyebrow").textContent = documentItem.code + " · v1.0";
+      byId("docTitle").textContent = documentItem.title;
+      byId("docDescription").textContent = documentItem.description;
+      byId("docDownload").href = documentItem.href;
+      byId("docDownload").setAttribute("download", documentItem.href.split("/").pop());
+      byId("docOutline").innerHTML = documentItem.blocks.map((block, index) =>
+        '<article class="doc-block"><small>0' + (index + 1) + '</small><b>' +
+        escapeHtml(block[0]) + '</b><p>' + escapeHtml(block[1]) + '</p></article>'
+      ).join("");
+    }
+
+    function initializeTheme() {
+      const button = byId("themeToggle");
+      try {
+        const saved = localStorage.getItem("loregraph-theme");
+        if (saved === "parchment" || saved === "blueprint") {
+          document.documentElement.dataset.theme = saved;
+        }
+      } catch (_) {
+        // Local storage can be unavailable in privacy-restricted contexts.
+      }
+      button.addEventListener("click", () => {
+        const root = document.documentElement;
+        const next = root.dataset.theme === "blueprint" ? "parchment" : "blueprint";
+        root.dataset.theme = next;
+        button.setAttribute("aria-label", next === "blueprint" ? "Switch to parchment theme" : "Switch to blueprint theme");
+        try {
+          localStorage.setItem("loregraph-theme", next);
+        } catch (_) {
+          // Theme still works for the current page when persistence is blocked.
+        }
+      });
+    }
+
+    async function copyScenarioContext() {
+      const scenario = scenarios[state.scenario];
+      const text = scenario.question + "\n\n" + scenario.summary + "\n\nFilters: " + scenario.filters.join(", ");
+      try {
+        await navigator.clipboard.writeText(text);
+        const toast = byId("toast");
+        toast.classList.add("show");
+        window.setTimeout(() => toast.classList.remove("show"), 1800);
+      } catch (_) {
+        window.prompt("Copy this context summary:", text);
+      }
+    }
+
+    byId("schemaSearch").addEventListener("input", renderSchemaCards);
+    byId("copyContext").addEventListener("click", copyScenarioContext);
+    initializeTheme();
+    renderJourneys();
+    renderLayers();
+    renderPipeline();
+    renderScenario();
+    renderDocuments();
+  </script>
+</body>
+</html>

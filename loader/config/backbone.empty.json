@@ -1,0 +1,5 @@
+{
+  "version": "1.0.0",
+  "purpose": "Empty identity seed pack. Add only stable names and aliases; do not encode claims here.",
+  "entities": []
+}

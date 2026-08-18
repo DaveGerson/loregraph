@@ -1,0 +1,14 @@
+sources:
+  - path: "sample-campaign-notes.md"
+    code: "SAMPLE-CAMPAIGN"
+    title: "Sample campaign notes"
+    edition: "sample-v1"
+    source_kind: "campaign"
+    canon_scope: "CAMPAIGN"
+    actuality: "OCCURRED"
+    rights_basis: "USER_OWNED"
+    indexing_mode: "FULL_TEXT"
+    visibility: "DM_ONLY"
+    campaign_id: "campaign:sample"
+    ruleset_version: "D&D 2024 / SRD 5.2.1"
+    remote_processing_allowed: false

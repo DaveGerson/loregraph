@@ -1,0 +1,72 @@
+[project]
+tenant_id = "personal"
+workspace_dir = "../.loregraph"
+schema_path = "../schema/canonical-profile.json"
+backbone_path = "backbone.empty.json"
+
+[parsing]
+# auto: Docling when installed, otherwise PyMuPDF. Use docling explicitly for
+# two-column books, tables, sidebars, or OCR.
+backend = "auto"
+ocr = false
+remove_repeated_margins = true
+
+[chunking]
+# Retrieval context is recovered through NEXT_CHUNK graph links, so extraction
+# chunks intentionally have zero overlap. This avoids paying twice for facts.
+target_tokens = 700
+max_tokens = 950
+min_tokens = 80
+atomic_max_tokens = 2600
+overlap_tokens = 0
+
+[extraction]
+# none creates chunks, deterministic mentions, and a cost estimate without
+# paid calls. openai enables synchronous extraction. openai_batch writes Batch
+# API request JSONL for asynchronous processing.
+provider = "none"
+model = "gpt-5-mini"
+prompt_version = "loregraph-v2"
+mode = "changed"
+confidence_threshold = 0.70
+max_chunks = 500
+max_input_tokens = 400000
+max_output_tokens_per_chunk = 1200
+max_estimated_cost_usd = 15.00
+# Update these from the provider's current pricing page before a run. Zero means
+# "price unknown" and disables the dollar gate; token and chunk gates still run.
+input_price_per_million_usd = 0.0
+output_price_per_million_usd = 0.0
+batch_price_multiplier = 0.5
+content_types = ["lore", "adventure", "rules", "item"]
+
+[embeddings]
+# Local embeddings are the recommended default for owned sourcebooks. Set to
+# sentence_transformers after installing .[local-embeddings], or openai after
+# explicitly opting individual books into remote processing.
+provider = "none"
+model = "Alibaba-NLP/gte-modernbert-base"
+dimensions = 0
+batch_size = 32
+max_input_tokens = 5000000
+vector_index_name = "chunk_embedding"
+
+[resolution]
+exact_alias = true
+fuzzy_threshold = 0.94
+review_threshold = 0.84
+
+[neo4j]
+enabled = false
+database = "neo4j"
+batch_size = 500
+create_projection_edges = true
+project_unreviewed = true
+
+[obsidian]
+enabled = true
+vault_path = "../output/LoreGraph"
+write_chunk_notes = false
+write_assertion_notes = true
+include_superseded = false
+max_quote_chars = 500

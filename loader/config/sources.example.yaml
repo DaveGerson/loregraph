@@ -1,0 +1,92 @@
+# Copy to sources.yaml and update paths. Rights metadata is deliberately explicit:
+# unknown or no-index sources are parsed only for inventory and are not chunked.
+sources:
+  - path: "/absolute/path/to/SRD_CC_v5.2.1.pdf"
+    code: "SRD-5.2.1"
+    title: "System Reference Document 5.2.1"
+    edition: "2024-family"
+    source_kind: "rules"
+    game_system: "Dungeons & Dragons"
+    ruleset: "D&D 2024 / 5.5e"
+    ruleset_version: "D&D 2024 / SRD 5.2.1"
+    canon_scope: "NONE"
+    actuality: "AUTHORED"
+    rights_basis: "CC_BY_4_0"
+    indexing_mode: "FULL_TEXT_WITH_ATTRIBUTION"
+    attribution: "Copy the exact attribution statement from the SRD legal preamble."
+    remote_processing_allowed: true
+
+  - path: "/absolute/path/to/owned-setting-sourcebook.pdf"
+    code: "SETTING-CORE"
+    title: "Owned setting sourcebook"
+    edition: "first-edition"
+    source_kind: "setting"
+    canon_scope: "SETTING_SOURCE"
+    actuality: "AUTHORED"
+    rights_basis: "PRIVATE_PLAY"
+    indexing_mode: "PRIVATE_ONLY"
+    visibility: "DM_ONLY"
+    # Change to true only if you intend to send excerpts from this book to the
+    # configured hosted extraction/embedding provider.
+    remote_processing_allowed: false
+    # For the Eberron validation corpus, set this to lore_eberron and select
+    # config/backbone.eberron.json in project.toml.
+    extraction_profile: "lore"
+    # Optional inclusive page ranges for indexes, ads, or legal pages that
+    # should not become chunks. PDF page numbers are 1-based file pages.
+    excludes: [[1, 2], [320, 324]]
+
+  - path: "/absolute/path/to/owned-published-adventure.pdf"
+    code: "ADVENTURE"
+    title: "Owned published adventure"
+    edition: "5e"
+    source_kind: "adventure"
+    # Adventure contents describe an authored scenario. They are not setting
+    # truth and are not campaign history until your table actually plays them.
+    canon_scope: "ADVENTURE_SOURCE"
+    actuality: "AUTHORED"
+    rights_basis: "PRIVATE_PLAY"
+    indexing_mode: "PRIVATE_ONLY"
+    visibility: "DM_ONLY"
+    remote_processing_allowed: false
+
+  - path: "/absolute/path/to/campaign-notes.md"
+    code: "CAMPAIGN-NOTES"
+    title: "Campaign notes"
+    edition: "campaign"
+    source_kind: "campaign"
+    canon_scope: "CAMPAIGN"
+    actuality: "OCCURRED"
+    rights_basis: "USER_OWNED"
+    indexing_mode: "FULL_TEXT"
+    campaign_id: "campaign:example"
+    ruleset_version: "D&D 2024 / SRD 5.2.1"
+    remote_processing_allowed: true
+
+  - path: "/absolute/path/to/character-sheet.md"
+    code: "CHARACTER-SHEET"
+    title: "Character sheet snapshot"
+    edition: "session-12"
+    source_kind: "campaign"
+    canon_scope: "CAMPAIGN"
+    actuality: "OCCURRED"
+    rights_basis: "USER_OWNED"
+    indexing_mode: "FULL_TEXT"
+    visibility: "DM_ONLY"
+    campaign_id: "campaign:example"
+    ruleset_version: "D&D 2024 / SRD 5.2.1"
+    extraction_profile: "character"
+    remote_processing_allowed: true
+
+  - path: "/absolute/path/to/research-notes.md"
+    code: "RESEARCH-NOTES"
+    title: "Research notes"
+    edition: "notes-v1"
+    source_kind: "note"
+    canon_scope: "PERSONAL"
+    actuality: "AUTHORED"
+    rights_basis: "USER_NOTES"
+    indexing_mode: "FULL_TEXT"
+    visibility: "DM_ONLY"
+    extraction_profile: "notes"
+    remote_processing_allowed: true

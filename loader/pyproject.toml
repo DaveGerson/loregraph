@@ -1,0 +1,46 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "loregraph-loader"
+version = "0.2.0"
+description = "Provenance-first, storage-agnostic loader for lore, campaigns, rules, and personal knowledge"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "LoreGraph contributors"}]
+dependencies = [
+  "pydantic>=2.11,<3",
+  "PyYAML>=6.0,<7",
+  "PyMuPDF>=1.25,<2",
+]
+
+[project.optional-dependencies]
+openai = ["openai>=2.47,<3"]
+neo4j = ["neo4j>=6.2,<7"]
+docling = ["docling>=2.114,<3"]
+easy = ["neo4j-graphrag[experimental,openai,fuzzy-matching]==1.18.0"]
+local-embeddings = ["sentence-transformers>=5,<6"]
+all = [
+  "openai>=2.47,<3",
+  "neo4j>=6.2,<7",
+  "docling>=2.114,<3",
+  "neo4j-graphrag[experimental,openai,fuzzy-matching]==1.18.0",
+  "sentence-transformers>=5,<6",
+]
+
+[project.scripts]
+loregraph = "loregraph.cli:main"
+eberron-kg = "loregraph.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/loregraph"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pyright]
+pythonVersion = "3.11"
+typeCheckingMode = "basic"

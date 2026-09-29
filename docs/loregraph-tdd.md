@@ -297,6 +297,12 @@ loregraph export-simple-schema schema.json --profile notes
 The legacy `eberron-kg` alias may remain during migration, but all new examples
 and automation use `loregraph`.
 
+Agent interface: `loregraph-mcp` is a read-only MCP server over the Neo4j
+projection (local, Aura, or any Bolt endpoint). It enforces the §8 deny-first
+filters inside every query under an operator-chosen audience and returns cited
+passages, entities, assertions, and assertion paths. See
+`loader/docs/mcp-server-design.md`.
+
 ## 11. Cost controls
 
 - no model provider by default;

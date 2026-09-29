@@ -63,6 +63,40 @@ batch_size = 500
 create_projection_edges = true
 project_unreviewed = true
 
+[mcp]
+# Read-only agent access via `loregraph-mcp --config config/project.toml`.
+# Without [mcp.connections.*], NEO4J_URI/USERNAME/PASSWORD/DATABASE are used.
+max_rows = 200
+query_timeout_seconds = 20
+# auto: use local sentence_transformers query embeddings when [embeddings] uses
+# them. Hosted (openai) query embedding is never inferred; set it explicitly.
+query_embeddings = "auto"
+# Raw Cypher is only permitted with the unrestricted owner audience.
+allow_raw_cypher = false
+
+[mcp.policy]
+# player: PUBLIC+PLAYER, dm: +DM_ONLY, owner: +PRIVATE. The agent can narrow
+# this per call but never widen it. --audience overrides it.
+audience = "player"
+review_statuses = ["ACCEPTED", "UNREVIEWED", "NEEDS_REVIEW"]
+
+# Named connections. Values ending in _env name environment variables; secrets
+# are never accepted inline.
+# [mcp.connections.local]
+# uri = "neo4j://localhost:7687"
+# password_env = "NEO4J_LOCAL_PASSWORD"
+#
+# [mcp.connections.aura]
+# uri_env = "NEO4J_URI"
+# username_env = "NEO4J_USERNAME"
+# password_env = "NEO4J_PASSWORD"
+# database_env = "NEO4J_DATABASE"
+#
+# [mcp.connections.homelab]
+# uri = "neo4j://graph.internal:7687"
+# trusted_ca = "certs/homelab-ca.pem"
+# password_env = "HOMELAB_NEO4J_PASSWORD"
+
 [obsidian]
 enabled = true
 vault_path = "../output/LoreGraph"

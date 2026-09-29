@@ -157,6 +157,35 @@ deletes an unmarked Markdown file.
 The local `.loregraph/records/*.jsonl` evidence ledger remains authoritative.
 SQLite stores stage fingerprints and usage accounting only.
 
+## Agent access (MCP server)
+
+`loregraph-mcp` is a read-only [Model Context Protocol](https://modelcontextprotocol.io)
+server that lets agents pull cited context from the Neo4j projection, whether it
+runs locally, on Aura, or anywhere else reachable over Bolt.
+
+```bash
+python -m pip install -e '.[mcp]'
+loregraph-mcp --config config/project.toml --audience dm --check
+claude mcp add loregraph -- "$PWD/.venv/bin/loregraph-mcp" \
+  --config "$PWD/config/project.toml" --env-file "$PWD/.env" --audience dm
+```
+
+Agents get `search_passages` (full-text, vector, or hybrid), `get_passage`,
+`search_entities`, `get_entity`, `find_assertions`, `find_connections`,
+`list_sources`, `graph_schema`, and `status`. Every result carries citations
+and the assertion's truth, review, actuality, scope, and campaign fields.
+
+The operator picks an audience at launch: `player` (default: PUBLIC and
+PLAYER), `dm` (adds DM_ONLY), or `owner` (adds PRIVATE). Filters run inside
+each query, and tool arguments can narrow them but never widen them. Several
+named connections (local, Aura, self-hosted with a private CA) can be declared
+under `[mcp.connections.*]`; with none, the `NEO4J_*` variables above are used.
+Raw Cypher (`--allow-raw-cypher`) is available only to the owner audience, and
+it still runs in read-only transactions with timeouts.
+
+See [docs/mcp-server-design.md](docs/mcp-server-design.md) for configuration,
+the tool catalog, the access model, and client setup.
+
 ## Easy pilot path
 
 Neo4j's experimental `SimpleKGPipeline` can validate labels and questions on a
@@ -179,8 +208,17 @@ PYTHONPATH=src python -m unittest discover -s tests -v
 
 Tests cover schema closure, generic notes routing, domain/range validation,
 strict Batch output, quote grounding, page exclusion, atomic mechanics,
-entity resolution, rechunk cleanup, idempotence, audit integrity, and Obsidian
-frontmatter.
+entity resolution, rechunk cleanup, idempotence, audit integrity, Obsidian
+frontmatter, and MCP server policy and guards.
+
+The MCP leakage and isolation suite needs a disposable Neo4j, because it
+replaces LoreGraph-managed nodes in the target database:
+
+```bash
+docker run -d -p 7687:7687 -e NEO4J_AUTH=neo4j/loregraph-test neo4j:5-community
+LOREGRAPH_TEST_NEO4J_URI=neo4j://localhost:7687 LOREGRAPH_TEST_NEO4J_PASSWORD=loregraph-test \
+  PYTHONPATH=src python -m unittest discover -s tests -v
+```
 
 ## Boundaries
 
